@@ -18,5 +18,5 @@ async def callback_continue(callback: CallbackQuery):
         # что-то происходит
         await session.commit()
 
-    await callback.message.answer("Успешно!")
+    await callback.message.answer("Выберите роль. К примеру: 'Учитель' или 'Слушатель'. Напишите в чат")
     logging.info(f"user {callback.from_user.id} pressed continue button")

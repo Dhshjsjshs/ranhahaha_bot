@@ -17,4 +17,5 @@ async_session_maker: AsyncSession = sessionmaker(engine, class_=AsyncSession, ex
 # https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#synopsis-orm
 async def async_create_table():
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

@@ -27,3 +27,5 @@ class User(Base):
     username = Column(String, unique=False, nullable=True)  # Вместо String можно использовать VARCHAR()
 
     reg_date = Column(DATE, default=datetime.datetime.now())
+
+    teacher = Column(String, unique=False, nullable=True)
