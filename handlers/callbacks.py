@@ -30,5 +30,6 @@ async def callback_continue(callback: CallbackQuery):
 
             await callback.message.answer("Теперь вы преподаватель")
             await callback.message.answer(f"Отправьте пользователю ссылку-приглашение\ninvite/{user.user_id}")
-
+        else:
+            await callback.message.answer("Введите ссылку приглашение ниже формата invite/id_преподавателя")
     logging.info(f"user {callback.from_user.id} pressed continue button")

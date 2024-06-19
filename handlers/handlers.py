@@ -2,7 +2,6 @@ __all__ = [
     "register_message_handler",
 ]
 
-
 import logging
 
 from aiogram import Router, F
@@ -10,15 +9,17 @@ from aiogram import types
 from aiogram.filters.command import Command
 from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from yadisk import YaDisk
 
+from config import CLIENT_ID
 from db import async_session_maker, User, DiskClass
+from db.models import YFolder
 from .callbacks import callback_continue
 from .keyboards import keyboard_continue
 
 # настройка логирования
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
 
 # help_command
 help_str = """
@@ -59,12 +60,12 @@ async def status_command(message: types.Message):
 
         await message.reply(text=f"<b>User ID</b>: <i>{user.user_id}</i>\n"
                                  f"<b>User name</b>: <i>{user.username}</i>",
-                                 parse_mode="HTML")
+                            parse_mode="HTML")
         logging.info(f"user {message.from_user.id} is asking for status")
 
 
 async def register_command(message: types.Message):
-    text = f"Перейдите по ссылке () и авторизуйтесь. Далее сохраните свой токен (/token токен) "
+    text = f"Перейдите по ссылке ({CLIENT_ID}) и авторизуйтесь. Далее сохраните свой токен (/token токен) "
 
     logging.info(f"{message.from_user.id} - register_command")
     await message.reply(text)
@@ -97,25 +98,58 @@ async def token_command(message: types.Message):
     logging.info(f"{message.from_user.id} - token_command")
 
 
-
 async def add_command(message: types.Message):
+    text_array = message.text.split()
     async with async_session_maker() as session:
         session: AsyncSession
+        user = await session.get(User, message.from_user.id)
+        if user.teacher:
+            await message.reply("ТОЛЬКО ДЛЯ ПРЕПОДАВАТЕЛЕЙ")
+            return
+
+        if len(text_array) == 1:
+            await message.reply("Требуется название папки (через пробел после команды)")
+        else:
+            folder = YFolder(name=text_array[1], teacher=message.from_user.id)
+
+            session.add(folder)
+            await session.commit()
+            await message.reply("Папка добавлена")
 
     logging.info(f"{message.from_user.id} - add_command")
 
 
 async def delete_command(message: types.Message):
+    text_array = message.text.split()
     async with async_session_maker() as session:
         session: AsyncSession
+        user = await session.get(User, message.from_user.id)
+        if user.teacher:
+            await message.reply("ТОЛЬКО ДЛЯ ПРЕПОДАВАТЕЛЕЙ")
+            return
+
+        if len(text_array) == 1:
+            await message.reply("Требуется название папки (через пробел после команды)")
+        else:
+            f = select(YFolder).filter(YFolder.name == text_array[1])
+
+            result = await session.execute(f)
+            yandexfolder = result.scalars().first()
+
+            await session.delete(yandexfolder)
+
+            await message.reply("Папка удалена")
+
+            await session.commit()
+            await session.close()
 
     logging.info(f"{message.from_user.id} - delete_command")
 
 
 async def listen_user_text(message: types.Message):
-    teacherid = message.text.split("/")[1]
-
     async with async_session_maker() as session:
+        position = message.text.find('invite/')
+        teacherid = message.text[position + len('invite/'):]
         session: AsyncSession
 
         teacher = await session.get(User, teacherid)

@@ -10,4 +10,5 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN: str = os.getenv('TOKEN')
+CLIENT_ID: str = os.getenv('CLIENT_ID')
 

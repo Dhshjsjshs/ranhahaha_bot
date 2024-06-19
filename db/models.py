@@ -16,6 +16,18 @@ from sqlalchemy import Column, Integer, String, DATE
 class Base(DeclarativeBase):
     pass
 
+class YFolder(Base):
+    """модель пользователя tg для регистрации"""
+
+    __tablename__ = "folder_table"
+
+    id = Column(Integer, nullable=False, unique=True, primary_key=True)
+
+    name = Column(String, unique=False)
+
+    add_date = Column(DATE, default=datetime.datetime.now())
+
+    teacher = Column(String, unique=False, nullable=True)
 
 class User(Base):
     """модель пользователя tg для регистрации"""
