@@ -11,7 +11,7 @@ from aiogram.filters.command import Command
 from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db import async_session_maker, User
+from db import async_session_maker, User, DiskClass
 from .callbacks import callback_continue
 from .keyboards import keyboard_continue
 
@@ -41,14 +41,7 @@ async def help_command(message: types.Message):
             logging.info(f"user {message.from_user.id} asks for help")
 
         else:
-            new_user = {
-                "user_id": message.from_user.id,
-                "username": message.from_user.username
-            }
-            stmt = insert(User).values(**new_user)
-            await session.execute(stmt)
-            await session.commit()
-            await message.reply(help_str, reply_markup=keyboard_continue)
+            await message.reply("Регистрация как:", reply_markup=keyboard_continue)
             logging.info(f"register new user: {message.from_user.id}")
 
 
@@ -80,6 +73,26 @@ async def register_command(message: types.Message):
 async def token_command(message: types.Message):
     async with async_session_maker() as session:
         session: AsyncSession
+        text_array = message.text.split()
+        user = await session.get(User, message.from_user.id)
+        #если у юзера есть ссылка на учителя значит он слушатель
+
+        if user.teacher:
+            await message.reply(f"Доступно только учителям")
+        elif len(text_array) == 1:
+            if user.token:
+                await message.reply(f"Ваш токен = {user.token}")
+            else:
+                await message.reply(f"Введите /token ваш токен")
+        else:
+            token = text_array[1].strip()
+            disk = DiskClass(token=token)
+
+            if disk.disk_check_token():
+                user.token = token
+                await message.reply(f"Токен успешно сохранен")
+            else:
+                await message.reply(f"Ошибка")
 
     logging.info(f"{message.from_user.id} - token_command")
 
@@ -131,14 +144,13 @@ async def listen_user_text(message: types.Message):
         await session.close()
 
 
-
-
 def register_message_handler(router: Router):
     """Маршрутизация"""
-    router.message.register(listen_user_text)
     router.message.register(help_command, Command(commands=["start", "help"]))
     router.message.register(status_command, Command(commands=["status"]))
     router.message.register(delete_command, Command(commands=["delete"]))
     router.message.register(add_command, Command(commands=["add"]))
     router.message.register(token_command, Command(commands=["token"]))
+    router.message.register(register_command, Command(commands=["register"]))
     router.callback_query.register(callback_continue, F.data.startswith("continue_"))
+    router.message.register(listen_user_text)

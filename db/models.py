@@ -29,3 +29,5 @@ class User(Base):
     reg_date = Column(DATE, default=datetime.datetime.now())
 
     teacher = Column(String, unique=False, nullable=True)
+
+    token = Column(String, unique=False, nullable=True)

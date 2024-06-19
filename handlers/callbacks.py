@@ -1,7 +1,7 @@
 import logging
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import async_session_maker
+from db import async_session_maker, User
 
 
 # Callback_query_handler - это функция, которая позволяет обрабатывать коллбек-запросы от пользователей.
@@ -15,8 +15,20 @@ async def callback_continue(callback: CallbackQuery):
 
     async with async_session_maker() as session:
         session: AsyncSession
-        # что-то происходит
-        await session.commit()
 
-    await callback.message.answer("Выберите роль. К примеру: 'Учитель' или 'Слушатель'. Напишите в чат")
+        if callback.data == "continue_teacher":
+            new_user = {
+                "user_id": callback.from_user.id,
+                "username": callback.from_user.username
+            }
+            user = User(user_id=callback.from_user.id, username=callback.from_user.username)
+
+            session.add(user)
+
+            await session.commit()
+            await session.close()
+
+            await callback.message.answer("Теперь вы преподаватель")
+            await callback.message.answer(f"Отправьте пользователю ссылку-приглашение\ninvite/{user.user_id}")
+
     logging.info(f"user {callback.from_user.id} pressed continue button")
